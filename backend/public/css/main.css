@@ -1,0 +1,114 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;700&display=swap');
+
+html,
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #96dbfa;
+}
+
+#loading-screen {
+  background-color: rgba(25,25,25,0.7);
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  z-index: 9999;
+  margin-top: 0;
+  top: 0;
+  text-align: center;
+}
+#loading-screen img {
+  width: 100px;
+  height: 100px;
+  position: relative;
+  margin-top: -50px;
+  margin-left: -50px;
+  top: 50%;
+}
+
+.uk-checkbox:checked, .uk-checkbox:indeterminate, .uk-radio:checked {
+  background-color: #825e1d !important;
+}
+
+.uk-label {
+  padding: 3px 15px !important;
+  background: #825e1d !important;
+  font-size: 1.05rem !important;
+}
+
+.uk-button-primary #login{
+    background-color: #43b2e5 !important; 
+}
+
+.uk-button-primary {
+  border-radius: 5px !important;
+  transition: 0.5s;
+}
+
+.uk-button-primary#guardar:hover {
+  background-color:#059405 !important;
+}
+
+.uk-button-primary#cancelar:hover {
+  background-color:#c93605 !important;
+}
+
+.uk-input {
+  border-radius: 5px !important;
+  transition: 0.5s; 
+}
+
+.uk-input:hover {
+  box-shadow: 0px 1px 6px rgb(116, 221, 242);
+}
+
+.uk-select {
+  border-radius: 5px !important;
+  transition: 0.5s;
+}
+
+.uk-select:hover {
+  box-shadow: 0px 1px 6px rgb(116, 221, 242);
+}
+
+.titulo {
+  background-color: #43b2e5;
+  color: white;
+}
+
+.uk-form-icon {
+  color: #43b2e5 !important; 
+}
+
+.uk-card-default {
+  border-radius: 20px;
+  box-shadow: 0px 5px 15px rgb(37, 36, 36) !important;
+}
+
+.uk-divider-icon {
+  margin-top: 50px;
+  margin-bottom: 50px;
+  border-radius: 15px;
+ background-color: #bc954d75 !important;
+}
+
+td:nth-child(even) {
+  border-radius: 10px;
+  background-color: #5ad0f88d;
+}
+
+.uk-label-primary {
+  background: #825e1d !important;
+}
+
+.uk-label-secondary{
+  background: #3a3a3a !important;
+}
+
+.uk-margin{
+  padding: 10px; 
+}
+
+.select2 {
+ width: 100% !important;
+}
+
