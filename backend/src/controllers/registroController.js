@@ -23,6 +23,33 @@ const registroController = {
     } catch (error) {
       errorResponse(res, error.message);
     }
+  },
+
+  async crearRegistro(req, res) {
+    try {
+      const registro = await registroService.crearRegistro(req.body);
+      successResponse(res, registro, 'Registro creado exitosamente');
+    } catch (error) {
+      errorResponse(res, error.message);
+    }
+  },
+
+  async actualizarRegistro(req, res) {
+    try {
+      const registro = await registroService.actualizarRegistro(req.params.id, req.body);
+      successResponse(res, registro, 'Registro actualizado exitosamente');
+    } catch (error) {
+      errorResponse(res, error.message);
+    }
+  },
+
+  async eliminarRegistro(req, res) {
+    try {
+      await registroService.eliminarRegistro(req.params.id);
+      successResponse(res, null, 'Registro eliminado exitosamente');
+    } catch (error) {
+      errorResponse(res, error.message);
+    }
   }
 };
 

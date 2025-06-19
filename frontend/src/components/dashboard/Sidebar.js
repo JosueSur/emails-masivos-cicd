@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../../../src/components/auth/AuthContext';
+import './Sidebar.css';
 
 const Sidebar = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: '🏠' },
@@ -15,11 +16,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
-      <div className="h-16 flex items-center justify-center border-b">
-        <span className="text-xl font-bold text-indigo-600">Panel</span>
-      </div>
-      
+    <div className="fixed inset-y-0 mt-24 left-0 w-56 bg-white shadow-lg">
       <nav className="mt-5 px-2">
         {menuItems.map((item) => (
           <Link
@@ -32,8 +29,16 @@ const Sidebar = () => {
           </Link>
         ))}
       </nav>
-
+      
       <div className="absolute bottom-0 w-full border-t p-4">
+      <div className="p-4 border-b">
+        <div className="flex flex-col items-center">
+          <div className="text-gray-700 text-md font-medium mb-1 flex items-center">
+            <div className="online-indicator"></div>
+            {user?.nombre} {user?.apellido}
+          </div>
+        </div>
+      </div>
         <button
           onClick={logout}
           className="w-full flex items-center px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 rounded-md"

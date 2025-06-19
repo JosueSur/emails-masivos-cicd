@@ -1,7 +1,8 @@
-const { Registro, Cliente, Usuario } = require('../models');
+const { Registros, Clientes, Usuarios, Estados, ClientesArgentina } = require('../models');
 const xlsx = require('xlsx');
 
 const registroService = {
+
   async cargarClientesDesdeExcel(file) {
     try {
       const workbook = xlsx.readFile(file);
@@ -21,7 +22,7 @@ const registroService = {
 
       // Guardar en base de datos
       for (const cliente of clientesArray) {
-        await Cliente.create({
+        await Clientes.create({
           id_clientes: cliente.id_clientes,
           organizacion_venta: cliente.organizacion_venta,
           canal_distribucion: cliente.canal_distribucion,
@@ -44,96 +45,56 @@ const registroService = {
 
   async obtenerRegistros() {
     try {
-      const registros = await Registro.findAll({
+      const registros = await Registros.findAll({
         include: [
           {
-            model: Usuario,
-            attributes: ['id', 'username', 'nombre', 'apellido']
+            model: Usuarios,
+            attributes: ['id', 'username', 'nombre', 'apellido', 'email', 'roleId']
+          },
+          {
+            model: Estados,
+            attributes: ['id', 'descripcion']
           }
         ],
-        order: [['fecha', 'DESC']]
+        order: [['fecha_registro', 'DESC']]
       });
-
       return registros;
     } catch (error) {
-      throw new Error('Error al obtener registros: ' + error.message);
+      throw error;
     }
   },
 
-  async crearRegistro(data, usuarioId) {
+  async crearRegistro(registroData) {
     try {
-      const registro = await Registro.create({
-        ...data,
-        usuarioId
-      });
-
+      const registro = await Registros.create(registroData);
       return registro;
     } catch (error) {
-      throw new Error('Error al crear registro: ' + error.message);
+      throw error;
     }
   },
 
-  async actualizarRegistro(id, data) {
+  async actualizarRegistro(id, registroData) {
     try {
-      const registro = await Registro.findByPk(id);
+      const registro = await Registros.findByPk(id);
       if (!registro) {
         throw new Error('Registro no encontrado');
       }
-
-      return await registro.update(data);
+      await registro.update(registroData);
+      return registro;
     } catch (error) {
-      throw new Error('Error al actualizar registro: ' + error.message);
+      throw error;
     }
   },
 
   async eliminarRegistro(id) {
     try {
-      const registro = await Registro.findByPk(id);
+      const registro = await Registros.findByPk(id);
       if (!registro) {
         throw new Error('Registro no encontrado');
       }
-
-      return await registro.destroy();
+      await registro.destroy();
     } catch (error) {
-      throw new Error('Error al eliminar registro: ' + error.message);
-    }
-  },
-
-  async obtenerRegistrosPorUsuario(usuarioId) {
-    try {
-      const registros = await Registro.findAll({
-        where: { usuarioId },
-        include: [
-          {
-            model: Usuario,
-            attributes: ['username', 'nombre', 'apellido']
-          }
-        ],
-        order: [['fecha', 'DESC']]
-      });
-
-      return registros;
-    } catch (error) {
-      throw new Error('Error al obtener registros del usuario: ' + error.message);
-    }
-  },
-
-  async obtenerRegistrosPorEstado(estado) {
-    try {
-      const registros = await Registro.findAll({
-        where: { estado },
-        include: [
-          {
-            model: Usuario,
-            attributes: ['username', 'nombre', 'apellido']
-          }
-        ],
-        order: [['fecha', 'DESC']]
-      });
-
-      return registros;
-    } catch (error) {
-      throw new Error('Error al obtener registros por estado: ' + error.message);
+      throw error;
     }
   }
 };
