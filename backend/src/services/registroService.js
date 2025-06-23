@@ -1,5 +1,8 @@
 const { Registros, Clientes, Usuarios, Estados, ClientesArgentina } = require('../models');
 const xlsx = require('xlsx');
+const fs = require('fs').promises;
+const path = require('path');
+const dayjs = require('dayjs');
 
 const registroService = {
 
@@ -64,11 +67,61 @@ const registroService = {
     }
   },
 
-  async crearRegistro(registroData) {
+  async crearRegistro(req) {
     try {
-      const registro = await Registros.create(registroData);
+      // Obtener los datos del formulario
+      const datos = req.body;
+      
+      if (req.file) {
+        
+        const fechaDayjs = dayjs(datos.fecha_programada).format('DD_MM_YYYY');
+        // Si hay archivo, moverlo a la carpeta files
+        // Obtener el nombre original del archivo
+        const nombreOriginal = req.file.originalname;
+        // Reemplazar espacios por guiones bajos en el nombre original
+        const nombreSinEspacios = nombreOriginal.split('.')[0].replace(/\s+/g, '_');
+        
+        // Crear el nombre del archivo con el formato: nombre_original_fecha_programada.pdf
+        const nombreArchivo = `${nombreSinEspacios}_${fechaDayjs}.pdf`;
+        const rutaArchivo = path.join(__dirname, '../files/', nombreArchivo);
+        // Verificar si el archivo ya existe
+        const existeArchivo = await fs.access(rutaArchivo).then(() => true).catch(() => false);
+        if (existeArchivo) {
+          throw new Error('Un archivo con este nombre ya existe');
+        }
+        
+        // Mover el archivo a la carpeta files
+        await fs.rename(req.file.path, rutaArchivo);
+        
+        // Actualizar los datos con el nombre del archivo
+        datos.archivo = nombreArchivo;
+      }
+      
+      // Crear el registro con los datos
+      // Formatear fechas en DD/MM/YYYY
+      const fechaRegistro = new Date(datos.fecha_registro);
+      const fechaDay = dayjs(datos.fecha_programada).format('DD/MM/YYYY');
+
+      const formatoFecha = (fecha, soloUnDigitoMes = false) => {
+        const dia = String(fecha.getDate()).padStart(2, '0');
+        const mes = soloUnDigitoMes ? String(fecha.getMonth() + 1) : String(fecha.getMonth() + 1).padStart(2, '0');
+        const anio = fecha.getFullYear();
+        return `${dia}/${mes}/${anio}`;
+      };
+      
+      const registro = await Registros.create({
+        fecha_registro: formatoFecha(fechaRegistro, true),
+        fecha_programada: fechaDay,
+        archivo: datos.archivo, 
+        observacion: datos.observaciones, 
+        sociedades: datos.sociedad, 
+        usuarioId: datos.usuario_id,
+        estadoId: 1
+      });
+      
       return registro;
     } catch (error) {
+      console.error('Error al crear registro:', error);
       throw error;
     }
   },

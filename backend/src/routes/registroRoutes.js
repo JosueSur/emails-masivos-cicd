@@ -13,13 +13,13 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage
-}).single('file');
+}).single('archivo');
 
 // Rutas del registro
 router.post('/cargar-clientes', upload, registroController.cargarClientes);
 router.get('/obtener-registros', registroController.obtenerRegistros);
-router.post('/crear-registro', registroController.crearRegistro);
-router.put('/actualizar-registro/:id', registroController.actualizarRegistro);
+router.post('/crear-registro', upload, registroController.crearRegistro);
+router.put('/actualizar-registro/:id', upload, registroController.actualizarRegistro);
 router.delete('/eliminar-registro/:id', registroController.eliminarRegistro);
 
 module.exports = router;

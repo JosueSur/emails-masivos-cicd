@@ -1,26 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import selectService from '../../services/selectService';
 import './Registros.css';
 import { FaEdit, FaTrash, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { useAuth } from '../auth/AuthContext';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Registros = () => {
+  const { user } = useAuth();
+  
   const [registros, setRegistros] = useState([]);
-  const [usuarios, setUsuarios] = useState([]);
-  const [estados, setEstados] = useState([]);
-  const [sociedades, setSociedades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    id_registro: '',
-    id_usuario: '',
-    id_estado: '',
-    fecha: '',
+    fecha_registro: '',
     fecha_programada: '',
-    archivo: '',
+    archivo: null,
     observaciones: '',
-    id_sociedad: ''
+    sociedad: '',
+    usuario_id: '',
+    id_registro: ''
   });
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type === 'application/pdf') {
+      setFormData(prev => ({
+        ...prev,
+        archivo: file
+      }));
+    }
+  };
+
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(15);
   const [totalPages, setTotalPages] = useState(1);
@@ -35,7 +46,6 @@ const Registros = () => {
   const fetchRegistros = async () => {
     try {
       const response = await axios.get('http://localhost:8001/api/registro/obtener-registros');
-      console.log('Registros:', response.data.data);
       setRegistros(response.data.data || []);
       setLoading(false);
     } catch (err) {
@@ -43,30 +53,6 @@ const Registros = () => {
     }
   };
 
-  const fetchSelectData = async () => {
-    try {
-      const usuariosData = await selectService.getUsuarios();
-      const estadosData = await selectService.getEstados();
-      const sociedadesData = await selectService.getSociedades();
-      
-      if (!usuariosData || !Array.isArray(usuariosData)) {
-        throw new Error('Error al obtener usuarios');
-      }
-      if (!estadosData || !Array.isArray(estadosData)) {
-        throw new Error('Error al obtener estados');
-      }
-      if (!sociedadesData || !Array.isArray(sociedadesData)) {
-        throw new Error('Error al obtener sociedades');
-      }
-
-      setUsuarios(usuariosData);
-      setEstados(estadosData);
-      setSociedades(sociedadesData);
-      setLoading(false);
-    } catch (err) {
-      setLoading(false);
-    }
-  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -79,25 +65,54 @@ const Registros = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (formData.id_registro) {
-        await axios.put(`/api/registro/actualizar-registro/${formData.id_registro}`, formData);
-      } else {
-        await axios.post('/api/registro/crear-registro', formData);
-      }
+      const formDataToSend = new FormData();
       
-      fetchRegistros();
-      setShowForm(false);
-      setFormData({
-        id_registro: '',
-        id_usuario: '',
-        id_estado: '',
-        fecha: '',
-        fecha_programada: '',
-        archivo: '',
-        observaciones: '',
-        id_sociedad: ''
+      // Agregar todos los campos del formulario
+      Object.keys(formData).forEach(key => {
+        if (key !== 'archivo') {
+          formDataToSend.append(key, formData[key]);
+        }
       });
-    } catch (err) {
+      
+      // Agregar el archivo PDF si existe
+      if (formData.archivo) {
+        formDataToSend.append('archivo', formData.archivo);
+      }
+
+      // Enviar el FormData al backend
+      const response = await axios.post(
+        formData.id_registro 
+          ? `http://localhost:8001/api/registro/actualizar-registro/${formData.id_registro}` 
+          : 'http://localhost:8001/api/registro/crear-registro',
+        formDataToSend,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      // Manejar la respuesta
+      if (response.data && response.data.success) {
+        toast.success(formData.id_registro ? 'Registro actualizado exitosamente' : 'Registro creado exitosamente');
+        fetchRegistros();
+        setShowForm(false);
+        setFormData({
+          fecha_registro: '',
+          fecha_programada: '',
+          archivo: null,
+          observaciones: '',
+          sociedad: '',
+          usuario_id: user?.id || '',
+          id_registro: ''
+        });
+      } else {
+        console.error('Error al procesar el registro:', response.data.error);
+        toast.error('Error al ' + (formData.id_registro ? 'actualizar' : 'crear') + ' el registro');
+      }
+    } catch (error) {
+      console.error('Error en la solicitud:', error.response?.data || error.message);
+      toast.error(error.response?.data?.message || 'Error al ' + (formData.id_registro ? 'actualizar' : 'crear') + ' el registro');
     }
   };
 
@@ -139,7 +154,7 @@ const Registros = () => {
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este registro?')) {
       try {
-        await axios.delete(`/api/registro/eliminar-registro/${id}`);
+        await axios.delete(`http://localhost:8001/api/registro/eliminar-registro/${id}`);
         fetchRegistros();
       } catch (err) {
       }
@@ -148,40 +163,48 @@ const Registros = () => {
 
   const handleEdit = (registro) => {
     setFormData({
-      id_registro: registro.id_registro,
-      id_usuario: registro.id_usuario,
-      id_estado: registro.id_estado,
-      id_sociedad: registro.id_sociedad,
-      fecha: registro.fecha,
+      fecha_registro: registro.fecha_registro,
       fecha_programada: registro.fecha_programada,
       archivo: registro.archivo,
-      observaciones: registro.observaciones
+      observaciones: registro.observaciones,
+      sociedad: registro.sociedad,
+      usuario_id: registro.usuario_id,
+      id_registro: registro.id_registro
     });
     setShowForm(true);
   };
 
   const handleNew = () => {
     setFormData({
-      id_registro: '',
-      id_usuario: '',
-      id_estado: '',
-      id_sociedad: '',
-      fecha: '',
+      fecha_registro: '',
       fecha_programada: '',
       archivo: '',
-      observaciones: ''
+      observaciones: '',
+      sociedad: '',
+      usuario_id: user?.id || '',
+      id_registro: ''
     });
     setShowForm(true);
   };
 
   useEffect(() => {
     fetchRegistros();
-    fetchSelectData();
   }, []);
 
-  if (loading || !registros || !usuarios || !estados) {
+  if (loading || !registros) {
     return (
       <div className="container-fluid">
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
         <div className="row">
           <div className="col-12">
             <div className="registros-card">
@@ -199,113 +222,63 @@ const Registros = () => {
   }
 
   return (
-    <div className="registros-container">
-      <div className="row">
-        <div className="col-12">
+      <div className="container-fluid">
+          <div className="flex justify-center items-center mb-6 mt-6">
+            <h2 className="text-2xl font-bold">Registros general de emails</h2>
+          </div>
           <div className="registros-card">
-            <div className="registros-card-header d-flex justify-content-between align-items-center">
-              <h3 className="mb-0">Registros</h3>
-              <button
-                className="registros-button registros-button-primary"
-                onClick={handleNew}
-              >
-                Nuevo Registro
-              </button>
-            </div>
             <div className="registros-card-body">
-              {showForm && (
-                <div className="mb-4">
-                  <form onSubmit={handleSubmit} className="registros-form">
-                    <div className="registros-form-group">
-                      <label className="registros-form-label">Usuario</label>
-                      <select
-                        className="registros-form-control"
-                        name="id_usuario"
-                        value={formData.id_usuario}
-                        onChange={handleInputChange}
-                        required
-                      >
-                        <option value="">Seleccionar usuario</option>
-                        {Array.isArray(usuarios) && usuarios.map(usuario => (
-                          <option key={usuario.id_usuario} value={usuario.id_usuario}>
-                            {usuario.nombre} {usuario.apellido} ({usuario.username})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="registros-form-group">
-                      <label className="registros-form-label">Estado</label>
-                      <select
-                        className="registros-form-control"
-                        name="id_estado"
-                        value={formData.id_estado}
-                        onChange={handleInputChange}
-                        required
-                      >
-                        <option value="">Seleccionar estado</option>
-                        {Array.isArray(estados) && estados.map(estado => (
-                          <option key={estado.id_estado} value={estado.id_estado}>
-                            {estado.nombre}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="registros-form-group">
-                      <label className="registros-form-label">Sociedad</label>
-                      <select
-                        className="registros-form-control"
-                        name="id_sociedad"
-                        value={formData.id_sociedad}
-                        onChange={handleInputChange}
-                        required
-                      >
-                        <option value="">Seleccionar sociedad</option>
-                        {Array.isArray(sociedades) && sociedades.map(sociedad => (
-                          <option key={sociedad.id_sociedad} value={sociedad.id_sociedad}>
-                            {sociedad.nombre}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="registros-form-group">
-                      <label className="registros-form-label">Fecha</label>
-                      <input
-                        type="date"
-                        className="registros-form-control"
-                        name="fecha"
-                        value={formData.fecha}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-
-                    <div className="registros-form-group">
-                      <label className="registros-form-label">Fecha Programada</label>
-                      <input
-                        type="date"
-                        className="registros-form-control"
-                        name="fecha_programada"
-                        value={formData.fecha_programada}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-
-                    <div className="registros-form-group">
-                      <label className="registros-form-label">Archivo</label>
-                      <input
-                        type="text"
-                        className="registros-form-control"
-                        name="archivo"
-                        value={formData.archivo}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-
+              <div className="flex justify-end">
+                <button
+                  onClick={() => handleNew()}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Nuevo Registro
+                </button>
+              </div>
+              <div className="registros-card-body">
+                {showForm && (
+                  <div className="mb-4">
+                    <form onSubmit={handleSubmit} className="registros-form">
+                      <div className="registros-form-group">
+                        <label className="registros-form-label">Sociedad</label>
+                        <select
+                          className="registros-form-control bg-white"
+                          name="sociedad"
+                          value={formData.sociedad}
+                          onChange={handleInputChange}
+                          required
+                        >
+                          <option value="">Seleccionar sociedad</option>
+                          <option value='1000' key={'1000'}>1000</option>
+                          <option value='2000' key={'2000'}>2000</option>
+                          <option value='4000' key={'4000'}>4000</option>
+                          <option value='5000' key={'5000'}>5000</option>
+                          <option value='6000' key={'6000'}>6000</option>
+                        </select>
+                      </div>
+                      <div className="registros-form-group">
+                        <label className="registros-form-label">Fecha</label>
+                        <input
+                          type="date"
+                          className="registros-form-control"
+                          name="fecha_programada"
+                          value={formData.fecha_programada}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                      <div className="registros-form-group">
+                        <label className="registros-form-label">Archivo PDF</label>
+                        <input
+                          type="file"
+                          className="registros-form-control"
+                          name="archivo"
+                          accept=".pdf"
+                          onChange={handleFileChange}
+                          required
+                        />
+                      </div>
                     <div className="registros-form-group">
                       <label className="registros-form-label">Observaciones</label>
                       <textarea
@@ -411,8 +384,7 @@ const Registros = () => {
           </div>
         </div>
       </div>
-    </div>
-  );
-};
+    )
+  }
 
 export default Registros;

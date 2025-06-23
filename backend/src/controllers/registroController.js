@@ -27,7 +27,7 @@ const registroController = {
 
   async crearRegistro(req, res) {
     try {
-      const registro = await registroService.crearRegistro(req.body);
+      const registro = await registroService.crearRegistro(req);
       successResponse(res, registro, 'Registro creado exitosamente');
     } catch (error) {
       errorResponse(res, error.message);
@@ -36,7 +36,7 @@ const registroController = {
 
   async actualizarRegistro(req, res) {
     try {
-      const registro = await registroService.actualizarRegistro(req.params.id, req.body);
+      const registro = await registroService.actualizarRegistro(req.params.id, req);
       successResponse(res, registro, 'Registro actualizado exitosamente');
     } catch (error) {
       errorResponse(res, error.message);
