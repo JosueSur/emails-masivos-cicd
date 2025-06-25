@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Registros.css';
-import { FaEdit, FaTrash, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaChevronLeft, FaChevronRight, FaSort } from 'react-icons/fa';
 import { useAuth } from '../auth/AuthContext';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 
 const Registros = () => {
   const { user } = useAuth();
@@ -12,6 +11,7 @@ const Registros = () => {
   const [registros, setRegistros] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [sortDirection, setSortDirection] = useState('asc');
   const [formData, setFormData] = useState({
     fecha_registro: '',
     fecha_programada: '',
@@ -80,17 +80,30 @@ const Registros = () => {
       }
 
       // Enviar el FormData al backend
-      const response = await axios.post(
-        formData.id_registro 
-          ? `http://localhost:8001/api/registro/actualizar-registro/${formData.id_registro}` 
-          : 'http://localhost:8001/api/registro/crear-registro',
-        formDataToSend,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
+      let response;
+      if (formData.id_registro) {
+        // Usar PUT para actualizar
+        response = await axios.put(
+          `http://localhost:8001/api/registro/actualizar-registro/${formData.id_registro}`,
+          formDataToSend,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
           }
-        }
-      );
+        );
+      } else {
+        // Usar POST para crear
+        response = await axios.post(
+          'http://localhost:8001/api/registro/crear-registro',
+          formDataToSend,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        );
+      }
 
       // Manejar la respuesta
       if (response.data && response.data.success) {
@@ -162,14 +175,15 @@ const Registros = () => {
   };
 
   const handleEdit = (registro) => {
+
     setFormData({
       fecha_registro: registro.fecha_registro,
       fecha_programada: registro.fecha_programada,
       archivo: registro.archivo,
-      observaciones: registro.observaciones,
-      sociedad: registro.sociedad,
-      usuario_id: registro.usuario_id,
-      id_registro: registro.id_registro
+      observaciones: registro.observacion,
+      sociedad: registro.sociedades,
+      usuario_id: registro.usuarioId,
+      id_registro: registro.id
     });
     setShowForm(true);
   };
@@ -191,20 +205,51 @@ const Registros = () => {
     fetchRegistros();
   }, []);
 
+  const handleSort = (column) => {
+    const newSortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    setSortDirection(newSortDirection);
+    
+    const sortedData = [...registros].sort((a, b) => {
+      // Para campos de fecha
+      if (column === 'fecha_registro' || column === 'fecha_programada') {
+        const dateA = a[column] ? new Date(a[column].split('/').reverse().join('-')) : new Date(0);
+        const dateB = b[column] ? new Date(b[column].split('/').reverse().join('-')) : new Date(0);
+        
+        return newSortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+      } 
+      // Para estado (ordenar alfabéticamente)
+      else if (column === 'estadoId') {
+        const textA = a[column] && a[column] === 1 ? 'Enviado' : '';
+        const textB = b[column] && b[column] === 2 ? 'Pendiente' : '';
+        
+        return newSortDirection === 'asc' 
+          ? textA.localeCompare(textB)
+          : textB.localeCompare(textA);
+      } 
+      // Para sociedad (ordenar numéricamente)
+      else if (column === 'sociedades') {
+        const numA = parseInt(a[column] || 0);
+        const numB = parseInt(b[column] || 0);
+        
+        return newSortDirection === 'asc' ? numA - numB : numB - numA;
+      } 
+      // Para cualquier otro campo
+      else {
+        const valA = a[column] || '';
+        const valB = b[column] || '';
+        
+        if (valA < valB) return newSortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return newSortDirection === 'asc' ? 1 : -1;
+        return 0;
+      }
+    });
+    
+    setRegistros(sortedData);
+  };
+
   if (loading || !registros) {
     return (
       <div className="container-fluid">
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-        />
         <div className="row">
           <div className="col-12">
             <div className="registros-card">
@@ -263,7 +308,7 @@ const Registros = () => {
                           type="date"
                           className="registros-form-control"
                           name="fecha_programada"
-                          value={formData.fecha_programada}
+                          value={formData.fecha_programada ? formData.fecha_programada.split('/').reverse().join('-') : ''}
                           onChange={handleInputChange}
                           required
                         />
@@ -276,8 +321,13 @@ const Registros = () => {
                           name="archivo"
                           accept=".pdf"
                           onChange={handleFileChange}
-                          required
+                          required={!formData.archivo}
                         />
+                        {formData.archivo && typeof formData.archivo === 'string' && (
+                          <div className="mt-2">
+                            <span className="text-sm text-gray-600">Archivo actual: {formData.archivo.split('/').pop()}</span>
+                          </div>
+                        )}
                       </div>
                     <div className="registros-form-group">
                       <label className="registros-form-label">Observaciones</label>
@@ -313,13 +363,33 @@ const Registros = () => {
                       <thead>
                         <tr>
                           <th>Accion</th>
-                          <th>Fecha</th>
-                          <th>Fecha programada</th>
+                          <th>
+                            Fecha 
+                            <button className="icon-button" onClick={() => handleSort('fecha_registro')}>
+                              <FaSort />
+                            </button>
+                          </th>
+                          <th>
+                            Fecha programada 
+                            <button className="icon-button" onClick={() => handleSort('fecha_programada')}>
+                              <FaSort />
+                            </button>
+                          </th>
                           <th>Archivo</th>
                           <th>Observacion</th>
                           <th>Usuario</th>
-                          <th>Estado</th>
-                          <th>Sociedades</th>
+                          <th>
+                            Estado 
+                            <button className="icon-button" onClick={() => handleSort('estadoId')}>
+                              <FaSort />
+                            </button>
+                          </th>
+                          <th>
+                            Sociedades 
+                            <button className="icon-button" onClick={() => handleSort('sociedades')}>
+                              <FaSort />
+                            </button>
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -345,7 +415,9 @@ const Registros = () => {
                               </td>
                               <td>{registro?.fecha_registro ? formatDate(registro.fecha_registro) : 'Sin datos'}</td>
                               <td>{registro?.fecha_programada ? formatDate(registro.fecha_programada) : 'Sin datos'}</td>
-                              <td>{registro?.archivo ? registro.archivo : 'Sin datos'}</td>
+                              <td title={registro?.archivo ? registro.archivo : 'Sin datos'}>
+                                <div className="tooltip-content">{registro?.archivo ? registro.archivo : 'Sin datos'}</div>
+                              </td>
                               <td title={registro?.observacion ? registro.observacion : 'Sin datos'}>
                                 <div className="tooltip-content">{registro?.observacion ? registro.observacion : 'Sin datos'}</div>
                               </td>

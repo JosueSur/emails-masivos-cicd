@@ -24,7 +24,6 @@ const Login = () => {
   // Handle token check
   useEffect(() => {
     if (token) {
-      console.log('Token detectado, redirigiendo...');
       navigate('/dashboard', { replace: true });
     }
   }, [token, navigate, location]);
@@ -154,7 +153,3 @@ const Login = () => {
 
 export default Login;
 
-// Asegurarse de que el componente se renderice correctamente
-if (typeof window !== 'undefined') {
-  console.log('Login component mounted');
-}

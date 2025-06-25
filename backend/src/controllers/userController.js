@@ -6,7 +6,7 @@ const userController = {
   async login(req, res) {
     try {
       const { usuario, password } = req.body;
-      console.log('entra acaa');
+
       if (!usuario || !password) {
         return errorResponse(res, 'Faltan campos requeridos - usuario y contraseña');
       }

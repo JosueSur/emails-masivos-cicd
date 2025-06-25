@@ -2,11 +2,10 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { Outlet } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
+//import { useAuth } from '../auth/AuthContext';
 
 const Dashboard = () => {
-  const { user } = useAuth();
-  console.log('Dashboard:', { user });
+  //const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-gray-100">

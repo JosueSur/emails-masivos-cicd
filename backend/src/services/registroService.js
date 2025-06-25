@@ -99,7 +99,7 @@ const registroService = {
       
       // Crear el registro con los datos
       // Formatear fechas en DD/MM/YYYY
-      const fechaRegistro = new Date(datos.fecha_registro);
+      const fechaRegistro = new Date();
       const fechaDay = dayjs(datos.fecha_programada).format('DD/MM/YYYY');
 
       const formatoFecha = (fecha, soloUnDigitoMes = false) => {
@@ -108,7 +108,7 @@ const registroService = {
         const anio = fecha.getFullYear();
         return `${dia}/${mes}/${anio}`;
       };
-      
+     
       const registro = await Registros.create({
         fecha_registro: formatoFecha(fechaRegistro, true),
         fecha_programada: fechaDay,
@@ -126,13 +126,54 @@ const registroService = {
     }
   },
 
-  async actualizarRegistro(id, registroData) {
+  async actualizarRegistro(id, req) {
     try {
-      const registro = await Registros.findByPk(id);
-      if (!registro) {
+      
+      const datos = req.body;
+      const registroById = await Registros.findByPk(id);
+      
+      if (!registroById) {
         throw new Error('Registro no encontrado');
       }
-      await registro.update(registroData);
+      if (req.file) {
+        
+        // Si hay archivo, moverlo a la carpeta files
+        // Obtener el nombre original del archivo
+        const nombreOriginal = req.file.originalname;
+        // Reemplazar espacios por guiones bajos en el nombre original
+        const nombreSinEspacios = nombreOriginal.split('.')[0].replace(/\s+/g, '_');
+        const fechaConGuion = datos.fecha_programada.replace(/\//g, '_');
+        // Crear el nombre del archivo con el formato: nombre_original_fecha_programada.pdf
+        const nombreArchivo = `${nombreSinEspacios}_${fechaConGuion}.pdf`;
+        const rutaArchivo = path.join(__dirname, '../files/', nombreArchivo);
+        // Verificar si el archivo ya existe
+        const existeArchivo = await fs.access(rutaArchivo).then(() => true).catch(() => false);
+        if (existeArchivo) {
+          throw new Error('Un archivo con este nombre ya existe');
+        }
+        
+        // Mover el archivo a la carpeta files
+        await fs.rename(req.file.path, rutaArchivo);
+        
+        // Actualizar los datos con el nombre del archivo
+        datos.archivo = nombreArchivo;
+      }
+      
+      // Crear el registro con los datos
+      // Formatear fechas en DD/MM/YYYY
+      //const fechaDay = dayjs(datos.fecha_programada).format('DD/MM/YYYY');
+
+      const registro = await Registros.update({
+        fecha_programada: datos.fecha_programada,
+        archivo: datos.archivo, 
+        observacion: datos.observaciones, 
+        sociedades: datos.sociedad, 
+        usuarioId: datos.usuario_id,
+        estadoId: 1
+      }, {
+        where: { id: id }
+      });
+      
       return registro;
     } catch (error) {
       throw error;
