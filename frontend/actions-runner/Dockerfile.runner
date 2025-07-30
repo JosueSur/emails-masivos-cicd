@@ -7,7 +7,10 @@ RUN apt-get update && apt-get install -y \
 # Crear usuario github sin permisos de root
 RUN useradd -m -s /bin/bash github
 
-WORKDIR /actions-runner
+
+# Establecer directorio de trabajo
+WORKDIR /home/github/actions-runner
+
 
 RUN curl -o actions-runner-linux-x64-2.316.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.316.0/actions-runner-linux-x64-2.316.0.tar.gz \
     && tar xzf actions-runner-linux-x64-2.316.0.tar.gz \
@@ -15,7 +18,11 @@ RUN curl -o actions-runner-linux-x64-2.316.0.tar.gz -L https://github.com/action
 
 RUN ./bin/installdependencies.sh
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Copiar entrypoint.sh al directorio actual y darle permisos
+COPY --chown=github:github entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
 
-ENTRYPOINT ["/entrypoint.sh"]
+# Cambiar al usuario github para el resto del build
+USER github
+
+ENTRYPOINT ["./entrypoint.sh"]
