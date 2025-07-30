@@ -186,9 +186,10 @@ const registroService = {
       if (!registro) {
         throw new Error('Registro no encontrado');
       }
-      await registro.destroy();
+      await Registros.destroy({ where: { id: id } });
+      return {success: true, message: 'Registro eliminado exitosamente'};
     } catch (error) {
-      throw error;
+      return {success: false, message: 'Error al eliminar registro: ' + error.message};
     }
   }
 };
