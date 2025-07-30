@@ -20,7 +20,7 @@ RUN ./bin/installdependencies.sh
 
 # Copiar entrypoint.sh al directorio actual y darle permisos
 COPY --chown=github:github entrypoint.sh ./entrypoint.sh
-RUN dos2unix ./entrypoint.sh
+
 RUN chmod +x ./entrypoint.sh
 
 # Cambiar al usuario github para el resto del build
