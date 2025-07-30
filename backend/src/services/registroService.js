@@ -1,7 +1,11 @@
-const { Registro, Cliente, Usuario } = require('../models');
+const { Registros, Clientes, Usuarios, Estados, ClientesArgentina } = require('../models');
 const xlsx = require('xlsx');
+const fs = require('fs').promises;
+const path = require('path');
+const dayjs = require('dayjs');
 
 const registroService = {
+
   async cargarClientesDesdeExcel(file) {
     try {
       const workbook = xlsx.readFile(file);
@@ -21,7 +25,7 @@ const registroService = {
 
       // Guardar en base de datos
       for (const cliente of clientesArray) {
-        await Cliente.create({
+        await Clientes.create({
           id_clientes: cliente.id_clientes,
           organizacion_venta: cliente.organizacion_venta,
           canal_distribucion: cliente.canal_distribucion,
@@ -44,96 +48,148 @@ const registroService = {
 
   async obtenerRegistros() {
     try {
-      const registros = await Registro.findAll({
+      const registros = await Registros.findAll({
         include: [
           {
-            model: Usuario,
-            attributes: ['id', 'username', 'nombre', 'apellido']
+            model: Usuarios,
+            attributes: ['id', 'username', 'nombre', 'apellido', 'email', 'roleId']
+          },
+          {
+            model: Estados,
+            attributes: ['id', 'descripcion']
           }
         ],
-        order: [['fecha', 'DESC']]
+        order: [['fecha_registro', 'DESC']]
       });
-
       return registros;
     } catch (error) {
-      throw new Error('Error al obtener registros: ' + error.message);
+      throw error;
     }
   },
 
-  async crearRegistro(data, usuarioId) {
+  async crearRegistro(req) {
     try {
-      const registro = await Registro.create({
-        ...data,
-        usuarioId
-      });
+      // Obtener los datos del formulario
+      const datos = req.body;
+      
+      if (req.file) {
+        
+        const fechaDayjs = dayjs(datos.fecha_programada).format('DD_MM_YYYY');
+        // Si hay archivo, moverlo a la carpeta files
+        // Obtener el nombre original del archivo
+        const nombreOriginal = req.file.originalname;
+        // Reemplazar espacios por guiones bajos en el nombre original
+        const nombreSinEspacios = nombreOriginal.split('.')[0].replace(/\s+/g, '_');
+        
+        // Crear el nombre del archivo con el formato: nombre_original_fecha_programada.pdf
+        const nombreArchivo = `${nombreSinEspacios}_${fechaDayjs}.pdf`;
+        const rutaArchivo = path.join(__dirname, '../files/', nombreArchivo);
+        // Verificar si el archivo ya existe
+        const existeArchivo = await fs.access(rutaArchivo).then(() => true).catch(() => false);
+        if (existeArchivo) {
+          throw new Error('Un archivo con este nombre ya existe');
+        }
+        
+        // Mover el archivo a la carpeta files
+        await fs.rename(req.file.path, rutaArchivo);
+        
+        // Actualizar los datos con el nombre del archivo
+        datos.archivo = nombreArchivo;
+      }
+      
+      // Crear el registro con los datos
+      // Formatear fechas en DD/MM/YYYY
+      const fechaRegistro = new Date();
+      const fechaDay = dayjs(datos.fecha_programada).format('DD/MM/YYYY');
 
+      const formatoFecha = (fecha, soloUnDigitoMes = false) => {
+        const dia = String(fecha.getDate()).padStart(2, '0');
+        const mes = soloUnDigitoMes ? String(fecha.getMonth() + 1) : String(fecha.getMonth() + 1).padStart(2, '0');
+        const anio = fecha.getFullYear();
+        return `${dia}/${mes}/${anio}`;
+      };
+     
+      const registro = await Registros.create({
+        fecha_registro: formatoFecha(fechaRegistro, true),
+        fecha_programada: fechaDay,
+        archivo: datos.archivo, 
+        observacion: datos.observaciones, 
+        sociedades: datos.sociedad, 
+        usuarioId: datos.usuario_id,
+        estadoId: 1
+      });
+      
       return registro;
     } catch (error) {
-      throw new Error('Error al crear registro: ' + error.message);
+      console.error('Error al crear registro:', error);
+      throw error;
     }
   },
 
-  async actualizarRegistro(id, data) {
+  async actualizarRegistro(id, req) {
     try {
-      const registro = await Registro.findByPk(id);
-      if (!registro) {
+      
+      const datos = req.body;
+      const registroById = await Registros.findByPk(id);
+      
+      if (!registroById) {
         throw new Error('Registro no encontrado');
       }
+      if (req.file) {
+        
+        // Si hay archivo, moverlo a la carpeta files
+        // Obtener el nombre original del archivo
+        const nombreOriginal = req.file.originalname;
+        // Reemplazar espacios por guiones bajos en el nombre original
+        const nombreSinEspacios = nombreOriginal.split('.')[0].replace(/\s+/g, '_');
+        const fechaConGuion = datos.fecha_programada.replace(/\//g, '_');
+        // Crear el nombre del archivo con el formato: nombre_original_fecha_programada.pdf
+        const nombreArchivo = `${nombreSinEspacios}_${fechaConGuion}.pdf`;
+        const rutaArchivo = path.join(__dirname, '../files/', nombreArchivo);
+        // Verificar si el archivo ya existe
+        const existeArchivo = await fs.access(rutaArchivo).then(() => true).catch(() => false);
+        if (existeArchivo) {
+          throw new Error('Un archivo con este nombre ya existe');
+        }
+        
+        // Mover el archivo a la carpeta files
+        await fs.rename(req.file.path, rutaArchivo);
+        
+        // Actualizar los datos con el nombre del archivo
+        datos.archivo = nombreArchivo;
+      }
+      
+      // Crear el registro con los datos
+      // Formatear fechas en DD/MM/YYYY
+      //const fechaDay = dayjs(datos.fecha_programada).format('DD/MM/YYYY');
 
-      return await registro.update(data);
+      const registro = await Registros.update({
+        fecha_programada: datos.fecha_programada,
+        archivo: datos.archivo, 
+        observacion: datos.observaciones, 
+        sociedades: datos.sociedad, 
+        usuarioId: datos.usuario_id,
+        estadoId: 1
+      }, {
+        where: { id: id }
+      });
+      
+      return registro;
     } catch (error) {
-      throw new Error('Error al actualizar registro: ' + error.message);
+      throw error;
     }
   },
 
   async eliminarRegistro(id) {
     try {
-      const registro = await Registro.findByPk(id);
+      const registro = await Registros.findByPk(id);
       if (!registro) {
         throw new Error('Registro no encontrado');
       }
-
-      return await registro.destroy();
+      await Registros.destroy({ where: { id: id } });
+      return {success: true, message: 'Registro eliminado exitosamente'};
     } catch (error) {
-      throw new Error('Error al eliminar registro: ' + error.message);
-    }
-  },
-
-  async obtenerRegistrosPorUsuario(usuarioId) {
-    try {
-      const registros = await Registro.findAll({
-        where: { usuarioId },
-        include: [
-          {
-            model: Usuario,
-            attributes: ['username', 'nombre', 'apellido']
-          }
-        ],
-        order: [['fecha', 'DESC']]
-      });
-
-      return registros;
-    } catch (error) {
-      throw new Error('Error al obtener registros del usuario: ' + error.message);
-    }
-  },
-
-  async obtenerRegistrosPorEstado(estado) {
-    try {
-      const registros = await Registro.findAll({
-        where: { estado },
-        include: [
-          {
-            model: Usuario,
-            attributes: ['username', 'nombre', 'apellido']
-          }
-        ],
-        order: [['fecha', 'DESC']]
-      });
-
-      return registros;
-    } catch (error) {
-      throw new Error('Error al obtener registros por estado: ' + error.message);
+      return {success: false, message: 'Error al eliminar registro: ' + error.message};
     }
   }
 };

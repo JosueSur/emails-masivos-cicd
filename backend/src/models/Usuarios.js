@@ -2,45 +2,55 @@ const { DataTypes } = require('sequelize');
 
 const Usuario = {
   init: (sequelize) => {
-    return sequelize.define('Usuario', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  nombre: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  apellido: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  email: {
-    type: DataTypes.STRING,
-    unique: true,
-    allowNull: false
-  },
-  username: {
-    type: DataTypes.STRING,
-    unique: true,
-    allowNull: false
-  },
-  roleId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  cantidad_conexiones: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0
-  },
-  ultima_conexion: {
-    type: DataTypes.DATE
-  }
-}, {
-  timestamps: true,
-  tableName: 'usuarios'
-});
+    const model = sequelize.define('usuarios', {
+      id: {
+        autoIncrement: true,
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        primaryKey: true
+      },
+      nombre: {
+        type: DataTypes.STRING(250),
+        allowNull: true
+      },
+      apellido: {
+        type: DataTypes.STRING(250),
+        allowNull: true
+      },
+      username: {
+        type: DataTypes.STRING(50),
+        allowNull: false
+      },
+      email: {
+        type: DataTypes.STRING(250),
+        allowNull: true
+      },
+      cantidad_conexiones: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+      },
+      ultima_conexion: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: new Date(),
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: new Date(),
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: new Date(),
+      }
+    }, {
+      sequelize,
+      tableName: 'usuarios',
+      schema: 'dbo'
+    });
+
+    return model;
   }
 };
 

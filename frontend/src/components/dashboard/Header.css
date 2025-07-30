@@ -1,0 +1,22 @@
+.header {
+  background-color: rgb(192, 144, 33);
+  height: 6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header .logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header .logo {
+  width: 300px;
+  height: 65px;
+  opacity: 1;
+  filter: brightness(100) contrast(1000) saturate(0) drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000);
+}
+
+

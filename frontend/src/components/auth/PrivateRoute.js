@@ -9,7 +9,6 @@ const PrivateRoute = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Verificar si el token es válido
   useEffect(() => {
     const checkToken = async () => {
       try {
@@ -25,7 +24,6 @@ const PrivateRoute = ({ children }) => {
           throw new Error('Invalid token');
         }
       } catch (error) {
-        console.error('Token validation error:', error);
         localStorage.removeItem('token');
         setError(error.message || 'Error de autenticación');
         navigate('/login', { replace: true, state: { error: error.message } });
@@ -47,10 +45,6 @@ const PrivateRoute = ({ children }) => {
 
   if (error) {
     return <Navigate to="/login" state={{ error }} />;
-  }
-
-  if (!token || !user) {
-    return <Navigate to="/login" />;
   }
 
   return children;

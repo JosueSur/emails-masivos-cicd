@@ -31,11 +31,6 @@ const authFunctions = {
     } catch (error) {
       throw error;
     }
-  },
-
-  logout: () => {
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
   }
 };
 
@@ -51,7 +46,7 @@ export const AuthProvider = ({ children }) => {
     } else {
       delete axios.defaults.headers.common['Authorization'];
     }
-  }, [token]); // This is correct - token is properly included in the dependency array
+  }, [token]);
 
   // Efecto para verificar token en localStorage
   useEffect(() => {
@@ -68,10 +63,8 @@ export const AuthProvider = ({ children }) => {
         password
       });
       
-      // Verificar si la respuesta tiene un token
       const responseData = response.data;
       
-      // Si la respuesta tiene una estructura de éxito
       if (responseData.success && responseData.data) {
         const data = responseData.data;
         if (data.token) {
@@ -82,15 +75,21 @@ export const AuthProvider = ({ children }) => {
         }
       }
       
-      // Si no encontramos el token en la respuesta
       throw new Error('No se recibió token válido');
     } catch (error) {
-      // Si es un error de axios, mostrar el mensaje de error del backend
       if (error.response) {
         throw new Error(error.response.data?.message || error.message);
       }
       throw error;
     }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    delete axios.defaults.headers.common['Authorization'];
+    setUser(null);
+    setToken('');
+    navigate('/login');
   };
 
   const register = async (userData) => {
@@ -102,13 +101,6 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       throw error;
     }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
-    delete axios.defaults.headers.common['Authorization'];
   };
 
   const value = {
