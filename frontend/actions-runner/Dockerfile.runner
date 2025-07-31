@@ -2,6 +2,7 @@ FROM ubuntu:22.04
 
 RUN apt-get update && apt-get install -y \
     curl tar git docker.io build-essential ca-certificates \
+    libnss3 libcurl4 libicu70 \
     && update-ca-certificates \
     && apt-get clean
 
