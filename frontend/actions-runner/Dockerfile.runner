@@ -1,32 +1,41 @@
-FROM mcr.microsoft.com/dotnet/runtime-deps:6.0
+FROM ubuntu:22.04
 
+# Instalar paquetes necesarios, incluyendo soporte para SSL (.NET)
 RUN apt-get update && apt-get install -y \
     curl tar git docker.io build-essential \
+    ca-certificates libnss3 libcurl4 libicu70 \
+    && update-ca-certificates \
     && apt-get clean
 
-# Crear usuario github sin permisos de root
+# Crear usuario no-root para el runner
 RUN useradd -m -s /bin/bash github
 
-
-# Establecer directorio de trabajo
+# Establecer directorio de trabajo del runner
 WORKDIR /home/github/actions-runner
 
+# Copiar el certificado raíz de Kaspersky al contenedor
+COPY certs/kaspersky-root.crt /usr/local/share/ca-certificates/kaspersky-root.crt
 
+# Instalar el certificado en el sistema
+RUN update-ca-certificates
+
+# Descargar y descomprimir el GitHub Actions Runner
 RUN curl -o actions-runner-linux-x64-2.316.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.316.0/actions-runner-linux-x64-2.316.0.tar.gz \
     && tar xzf actions-runner-linux-x64-2.316.0.tar.gz \
     && rm actions-runner-linux-x64-2.316.0.tar.gz
 
-# Cambiar permisos al usuario github (clave)
+# Asignar permisos al usuario github
 RUN chown -R github:github /home/github/actions-runner
 
+# Instalar dependencias necesarias del runner
 RUN ./bin/installdependencies.sh
 
-# Copiar entrypoint.sh al directorio actual y darle permisos
+# Copiar el entrypoint que configura y ejecuta el runner
 COPY --chown=github:github entrypoint.sh ./entrypoint.sh
-
 RUN chmod +x ./entrypoint.sh
 
-# Cambiar al usuario github para el resto del build
+# Cambiar al usuario github (no-root)
 USER github
 
+# Ejecutar el entrypoint al iniciar el contenedor
 ENTRYPOINT ["/bin/bash", "./entrypoint.sh"]
