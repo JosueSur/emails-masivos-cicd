@@ -1,7 +1,8 @@
 FROM ubuntu:22.04
 
 RUN apt-get update && apt-get install -y \
-    curl tar git docker.io build-essential \
+    curl tar git docker.io build-essential ca-certificates \
+    && update-ca-certificates \
     && apt-get clean
 
 # Crear usuario github sin permisos de root
