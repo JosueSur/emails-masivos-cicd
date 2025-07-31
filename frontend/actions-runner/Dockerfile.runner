@@ -1,9 +1,7 @@
-FROM ubuntu:22.04
+FROM mcr.microsoft.com/dotnet/runtime-deps:6.0
 
 RUN apt-get update && apt-get install -y \
-    curl tar git docker.io build-essential ca-certificates \
-    libnss3 libcurl4 libicu70 \
-    && update-ca-certificates \
+    curl tar git docker.io build-essential \
     && apt-get clean
 
 # Crear usuario github sin permisos de root
@@ -31,4 +29,4 @@ RUN chmod +x ./entrypoint.sh
 # Cambiar al usuario github para el resto del build
 USER github
 
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "./entrypoint.sh"]
