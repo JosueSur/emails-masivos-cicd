@@ -1,37 +1,24 @@
-name: Test CI/CD Workflow
+
+name: Local Deploy CI/CD
 
 on:
   push:
     branches:
-      - main
+      - main  # Puedes cambiar a la rama que quieras
 
 jobs:
-  test:
-    runs-on: self-hosted
+  deploy:
+    runs-on: self-hosted  # Muy importante: esto le dice que corra en tu runner local
     steps:
-      - name: Echo test
-        run: echo "Runner está funcionando"
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-#name: Local Deploy CI/CD
+      - name: Build Docker images
+        run: docker-compose build --no-cache
 
-#on:
-#  push:
-#    branches:
-#      - main  # Puedes cambiar a la rama que quieras
+      - name: Deploy containers
+        run: docker-compose up -d --force-recreate
 
-#jobs:
-#  deploy:
-#    runs-on: self-hosted  # Muy importante: esto le dice que corra en tu runner local
-#    steps:
-#      - name: Checkout repository
-#        uses: actions/checkout@v4
-
-#      - name: Build Docker images
-#        run: docker-compose build --no-cache
-
-#      - name: Deploy containers
-#        run: docker-compose up -d --force-recreate
-
-#      - name: Cleanup unused images
-#        run: docker image prune -f
+      - name: Cleanup unused images
+        run: docker image prune -f
 
