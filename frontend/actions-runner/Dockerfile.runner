@@ -2,8 +2,9 @@ FROM ubuntu:22.04
 
 # Instalar paquetes necesarios, incluyendo soporte para SSL (.NET)
 RUN apt-get update && apt-get install -y \
-    curl tar git docker.io docker-compose build-essential \
-    && apt-get clean
+    docker.io \
+    && curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose \
+    && chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
 # Crear usuario no-root para el runner
 RUN useradd -m -s /bin/bash github
