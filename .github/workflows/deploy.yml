@@ -1,13 +1,23 @@
-name: Test Runner CI/CD
+name: Local Deploy CI/CD
 
 on:
   push:
     branches:
-      - main
+      - main  # Puedes cambiar a la rama que quieras
 
 jobs:
-  test:
-    runs-on: self-hosted
+  deploy:
+    runs-on: self-hosted  # Muy importante: esto le dice que corra en tu runner local
     steps:
-      - name: Test echo
-        run: echo "Runner funcionando!"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker images
+        run: docker-compose build --no-cache
+
+      - name: Deploy containers
+        run: docker-compose up -d --force-recreate
+
+      - name: Cleanup unused images
+        run: docker image prune -f
+
