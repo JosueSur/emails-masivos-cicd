@@ -2,9 +2,9 @@ version: '3.9'
 services:
   react-app:
     build:
-      context: .
+      context: ./frontend
     volumes:
-      - .:/frontend
+      - ./frontend:/frontend
       - /frontend/node_modules
     ports:
       - "3001:3000"
