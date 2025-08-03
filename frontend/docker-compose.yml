@@ -25,6 +25,7 @@ services:
       - /usr/bin/docker:/usr/bin/docker
       - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins
     privileged: true
+    user: root
     restart: always
 
 # version: '3.8'

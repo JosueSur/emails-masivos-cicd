@@ -39,7 +39,7 @@ RUN DOCKER_GID=$(stat -c '%g' /var/run/docker.sock) && \
     usermod -aG docker github
 
 # Cambiar al usuario github (no-root)
-USER github
+#USER github
 
 # Ejecutar el entrypoint al iniciar el contenedor
 ENTRYPOINT ["/bin/bash", "./entrypoint.sh"]
