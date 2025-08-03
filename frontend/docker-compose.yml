@@ -22,6 +22,8 @@ services:
       - RUNNER_NAME
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+      - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins
     restart: always
 
 # version: '3.8'
