@@ -9,23 +9,12 @@ jobs:
   deploy:
     runs-on: self-hosted  # Muy importante: esto le dice que corra en tu runner local
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Debug Docker Compose Version
-        run: |
-          which docker
-          docker version
-          docker compose version
-          docker compose build --help
+      - name: Build Frontend Docker Image
+        run: docker compose build react-app
 
-      - name: Build Docker Compose (no cache)
-        run: docker compose -f frontend/docker-compose.yml build --no-cache
-
-
-      - name: Deploy containers
-        run: docker compose up -d --force-recreate
-
-      - name: Cleanup unused images
-        run: docker image prune -f
+      - name: Restart Frontend Container
+        run: docker compose up -d react-app
 

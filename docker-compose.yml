@@ -14,7 +14,7 @@ services:
 
   github-runner:
     build:
-      context: ./actions-runner
+      context: ./frontend/actions-runner
       dockerfile: Dockerfile.runner
     environment:
       - REPO_URL
@@ -22,8 +22,6 @@ services:
       - RUNNER_NAME
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker
-      - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins
     privileged: true
     user: root
     restart: always

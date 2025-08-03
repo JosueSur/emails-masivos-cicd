@@ -1,24 +1,32 @@
 FROM ubuntu:22.04
 
-# Instalar paquetes necesarios, incluyendo soporte para SSL (.NET)
+# Instalar dependencias necesarias
 RUN apt-get update && apt-get install -y \
+    curl \
+    tar \
+    git \
     docker.io \
-    && curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose \
+    && apt-get clean
+
+# Crear directorio de plugins de Docker CLI
+RUN mkdir -p /usr/local/lib/docker/cli-plugins
+
+# Descargar Docker Compose CLI plugin
+RUN curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 \
+    -o /usr/local/lib/docker/cli-plugins/docker-compose \
     && chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
-# Crear usuario no-root para el runner
+# Crear usuario no-root
 RUN useradd -m -s /bin/bash github
 
-# Establecer directorio de trabajo del runner
+# Configurar directorio de trabajo
 WORKDIR /home/github/actions-runner
 
-# Copiar el certificado raíz de Kaspersky al contenedor
+# Copiar certificados si fuera necesario
 COPY certs/kaspersky-root.crt /usr/local/share/ca-certificates/kaspersky-root.crt
-
-# Instalar el certificado en el sistema
 RUN update-ca-certificates
 
-# Descargar y descomprimir el GitHub Actions Runner
+# Descargar y descomprimir el runner
 RUN curl -o actions-runner-linux-x64-2.316.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.316.0/actions-runner-linux-x64-2.316.0.tar.gz \
     && tar xzf actions-runner-linux-x64-2.316.0.tar.gz \
     && rm actions-runner-linux-x64-2.316.0.tar.gz
@@ -26,20 +34,15 @@ RUN curl -o actions-runner-linux-x64-2.316.0.tar.gz -L https://github.com/action
 # Asignar permisos al usuario github
 RUN chown -R github:github /home/github/actions-runner
 
-# Instalar dependencias necesarias del runner
+# Instalar dependencias del runner
 RUN ./bin/installdependencies.sh
 
-# Copiar el entrypoint que configura y ejecuta el runner
+# Copiar el entrypoint del runner
 COPY --chown=github:github entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
-# Obtener GID de docker.sock en el host y crear grupo docker con ese GID
-RUN DOCKER_GID=$(stat -c '%g' /var/run/docker.sock) && \
-    groupadd -for -g $DOCKER_GID docker && \
-    usermod -aG docker github
+# Cambiar al usuario github
+USER github
 
-# Cambiar al usuario github (no-root)
-#USER github
-
-# Ejecutar el entrypoint al iniciar el contenedor
+# Entrypoint
 ENTRYPOINT ["/bin/bash", "./entrypoint.sh"]
