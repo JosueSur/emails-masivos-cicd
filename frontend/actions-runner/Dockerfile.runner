@@ -33,6 +33,11 @@ RUN ./bin/installdependencies.sh
 COPY --chown=github:github entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
+# Obtener GID de docker.sock en el host y crear grupo docker con ese GID
+RUN DOCKER_GID=$(stat -c '%g' /var/run/docker.sock) && \
+    groupadd -for -g $DOCKER_GID docker && \
+    usermod -aG docker github
+
 # Cambiar al usuario github (no-root)
 USER github
 
