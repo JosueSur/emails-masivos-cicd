@@ -12,8 +12,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build frontend (force no cache)
-        run: DOCKER_BUILDKIT=1 docker compose build --progress=plain
+      - name: Build frontend (no cache)
+        run: docker compose build --no-cache
 
 
       - name: Deploy containers
