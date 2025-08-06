@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux, docker]
 
     steps:
       - name: Checkout code
@@ -15,14 +15,13 @@ jobs:
 
       - name: Build and Deploy Containers
         run: |
-          echo "Building Docker Images..."
-          docker compose -f docker-compose.yml build --no-cache
+          cd /home/lnxadmin/ci-runners
 
           echo "Stopping existing containers..."
           docker compose down
 
           echo "Starting new containers..."
-          docker compose up -d
+          docker compose up --build -d
 
       - name: Clean up dangling images
         run: docker image prune -f
